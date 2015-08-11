@@ -7,10 +7,7 @@ import (
 	"github.com/codegangsta/cli"
 )
 
-const DebugHeader string = `@set @junk=1 /*
-@cscript //nologo //e:jscript "%~f0" %* & @pause & @goto :eof
-*/
-`
+const DebugHeader string = "@set @junk=1 /*\r\n@cscript //nologo //e:jscript \"%~f0\" %* & @pause & @goto :eof\r\n*/"
 
 func CmdDebug(c *cli.Context) {
 	var err error

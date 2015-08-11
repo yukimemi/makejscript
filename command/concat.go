@@ -3,6 +3,7 @@ package command
 import (
 	"bufio"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
@@ -10,6 +11,8 @@ import (
 	"strings"
 
 	"github.com/codegangsta/cli"
+	"golang.org/x/text/encoding/japanese"
+	"golang.org/x/text/transform"
 )
 
 func getImportLine(fname string) ([]string, error) {
@@ -68,8 +71,12 @@ func outputConcat(inpath string, outpath string, header string) error {
 	defer fw.Close()
 	fw.WriteString(header)
 	for _, line := range lines {
-		fw.WriteString(line)
-		fw.WriteString("\n")
+		sjisLine, err := utf8Toshiftjis(line)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error in encoding.")
+		}
+		fw.WriteString(sjisLine)
+		fw.WriteString("\r\n")
 	}
 
 	return err
@@ -87,6 +94,18 @@ func getOutName(fname string) string {
 	}
 
 	return path.Join(outDir, base+".cmd")
+}
+
+func utf8Toshiftjis(utf8 string) (string, error) {
+	var err error
+	r := strings.NewReader(utf8)
+	t := transform.NewReader(r, japanese.ShiftJIS.NewEncoder())
+	ret, err := ioutil.ReadAll(t)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Encoding UTF-8 to ShiftJIS Error !")
+		return "", err
+	}
+	return string(ret), err
 }
 
 func commandExecute(c *cli.Context, header string) error {
@@ -111,6 +130,5 @@ func commandExecute(c *cli.Context, header string) error {
 	if err != nil {
 		fmt.Errorf("%s\n", err)
 	}
-
 	return err
 }
