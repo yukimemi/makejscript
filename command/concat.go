@@ -1,0 +1,116 @@
+package command
+
+import (
+	"bufio"
+	"fmt"
+	"os"
+	"path"
+	"path/filepath"
+	"regexp"
+	"strings"
+
+	"github.com/codegangsta/cli"
+)
+
+func getImportLine(fname string) ([]string, error) {
+	var err error
+	importLines := make([]string, 0)
+
+	f, err := os.Open(fname)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "File %s could not read: %v\n", fname, err)
+		os.Exit(1)
+	}
+	defer f.Close()
+
+	basepath := path.Dir(fname)
+	re := regexp.MustCompile("^// import [\"|'](.*)[\"|']")
+
+	scanner := bufio.NewScanner(f)
+	for scanner.Scan() {
+		line := scanner.Text()
+
+		if m := re.FindAllStringSubmatch(line, -1); m != nil {
+			fpath := path.Join(basepath, m[0][1])
+			if path.Ext(fpath) == "" {
+				fpath = fpath + ".js"
+			}
+			lines, err := getImportLine(fpath)
+			if err != nil {
+				fmt.Errorf("%s", err)
+			}
+
+			for _, line := range lines {
+				importLines = append(importLines, line)
+			}
+		} else {
+			importLines = append(importLines, line)
+		}
+	}
+	if err = scanner.Err(); err != nil {
+		fmt.Fprintf(os.Stderr, "File %s scan error: %v\n", fname, err)
+	}
+	return importLines, err
+}
+
+func outputConcat(inpath string, outpath string, header string) error {
+	var err error
+	var lines []string
+	lines, err = getImportLine(inpath)
+	if err != nil {
+		fmt.Errorf("%s", err)
+	}
+
+	fw, err := os.Create(outpath)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Create out.js Error: %s", err)
+	}
+	defer fw.Close()
+	fw.WriteString(header)
+	for _, line := range lines {
+		fw.WriteString(line)
+		fw.WriteString("\n")
+	}
+
+	return err
+}
+
+func getOutName(fname string) string {
+	parent, child := filepath.Split(fname)
+	ext := path.Ext(child)
+	base := strings.TrimSuffix(child, ext)
+	outDir := path.Join(parent, "cmd")
+
+	d, e := os.Stat(outDir)
+	if e != nil || !d.IsDir() {
+		os.Mkdir(outDir, os.ModePerm)
+	}
+
+	return path.Join(outDir, base+".cmd")
+}
+
+func commandExecute(c *cli.Context, header string) error {
+	var err error
+
+	if len(c.Args()) != 1 {
+		fmt.Fprintln(os.Stderr, "Input file is not found !")
+		os.Exit(1)
+	}
+
+	inpath := c.Args()[0]
+	if _, err = os.Stat(inpath); err != nil {
+		fmt.Fprintln(os.Stderr, "Input file is not found !")
+		os.Exit(1)
+	}
+	outpath := getOutName(inpath)
+
+	fmt.Println("In  path:", inpath)
+	fmt.Println("Out path:", outpath)
+
+	err = outputConcat(inpath, outpath, header)
+	if err != nil {
+		fmt.Errorf("%s\n", err)
+	}
+
+	return err
+}

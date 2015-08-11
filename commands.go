@@ -1,20 +1,31 @@
 package main
 
 import (
-	"github.com/mitchellh/cli"
+	"fmt"
+	"os"
+
+	"github.com/codegangsta/cli"
 	"github.com/yukimemi/makejscript/command"
 )
 
-func Commands(meta *command.Meta) map[string]cli.CommandFactory {
-	return map[string]cli.CommandFactory{
+var GlobalFlags = []cli.Flag{}
 
-		"version": func() (cli.Command, error) {
-			return &command.VersionCommand{
-				Meta:     *meta,
-				Version:  Version,
-				Revision: GitCommit,
-				Name:     Name,
-			}, nil
-		},
-	}
+var Commands = []cli.Command{
+	{
+		Name:   "release",
+		Usage:  "Release build",
+		Action: command.CmdRelease,
+		Flags:  []cli.Flag{},
+	},
+	{
+		Name:   "debug",
+		Usage:  "Debug build",
+		Action: command.CmdDebug,
+		Flags:  []cli.Flag{},
+	},
+}
+
+func CommandNotFound(c *cli.Context, command string) {
+	fmt.Fprintf(os.Stderr, "%s: '%s' is not a %s command. See '%s --help'.", c.App.Name, command, c.App.Name, c.App.Name)
+	os.Exit(2)
 }
