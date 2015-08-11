@@ -70,6 +70,7 @@ func outputConcat(inpath string, outpath string, header string) error {
 	}
 	defer fw.Close()
 	fw.WriteString(header)
+	fw.WriteString("\r\n\r\n")
 	for _, line := range lines {
 		sjisLine, err := utf8Toshiftjis(line)
 		if err != nil {
