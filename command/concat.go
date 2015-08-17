@@ -26,7 +26,7 @@ func getImportLine(fname string) ([]string, error) {
 	}
 	defer f.Close()
 
-	basepath := path.Dir(fname)
+	basepath := filepath.Dir(fname)
 	re := regexp.MustCompile("^// import [\"|'](.*)[\"|']")
 
 	scanner := bufio.NewScanner(f)
@@ -34,8 +34,8 @@ func getImportLine(fname string) ([]string, error) {
 		line := scanner.Text()
 
 		if m := re.FindAllStringSubmatch(line, -1); m != nil {
-			fpath := path.Join(basepath, m[0][1])
-			if path.Ext(fpath) == "" {
+			fpath := filepath.Join(basepath, m[0][1])
+			if filepath.Ext(fpath) == "" {
 				fpath = fpath + ".js"
 			}
 			lines, err := getImportLine(fpath)
@@ -85,16 +85,16 @@ func outputConcat(inpath string, outpath string, header string) error {
 
 func getOutName(fname string) string {
 	parent, child := filepath.Split(fname)
-	ext := path.Ext(child)
+	ext := filepath.Ext(child)
 	base := strings.TrimSuffix(child, ext)
-	outDir := path.Join(parent, "cmd")
+	outDir := filepath.Join(parent, "cmd")
 
 	d, e := os.Stat(outDir)
 	if e != nil || !d.IsDir() {
 		os.Mkdir(outDir, os.ModePerm)
 	}
 
-	return path.Join(outDir, base+".cmd")
+	return filepath.Join(outDir, base+".cmd")
 }
 
 func utf8Toshiftjis(utf8 string) (string, error) {
