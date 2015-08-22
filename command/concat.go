@@ -81,7 +81,7 @@ func outputConcat(inpath string, outpath string, header string) error { // {{{
 
 	fw, err := os.Create(outpath)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Mkdir %s Error: %s", outpath, err)
+		fmt.Fprintf(os.Stderr, "Create %s  Error: %s", outpath, err)
 	}
 	defer fw.Close()
 	fw.WriteString(header)
@@ -98,11 +98,16 @@ func outputConcat(inpath string, outpath string, header string) error { // {{{
 	return err
 } // }}}
 
-func getOutName(fname string) string { // {{{
+func getOutName(fname, dir string) string { // {{{
 	parent, child := filepath.Split(fname)
 	ext := filepath.Ext(child)
 	base := strings.TrimSuffix(child, ext)
-	outDir := filepath.Join(parent, "cmd")
+	var outDir string
+	if dir != "" {
+		outDir = filepath.Join(parent, dir)
+	} else {
+		outDir = parent
+	}
 
 	d, e := os.Stat(outDir)
 	if e != nil || !d.IsDir() {
@@ -126,6 +131,7 @@ func utf8Toshiftjis(utf8 string) (string, error) { // {{{
 
 func commandExecute(c *cli.Context, header string) error { // {{{
 	var err error
+	var outpath string
 
 	if len(c.Args()) != 1 {
 		fmt.Fprintln(os.Stderr, "Input file is not found !")
@@ -137,7 +143,13 @@ func commandExecute(c *cli.Context, header string) error { // {{{
 		fmt.Fprintln(os.Stderr, "Input file is not found !")
 		os.Exit(1)
 	}
-	outpath := getOutName(inpath)
+
+	if c.String("output") != "" {
+		base := filepath.Base(inpath)
+		outpath = getOutName(filepath.Join(c.String("output"), base), "")
+	} else {
+		outpath = getOutName(inpath, "cmd")
+	}
 
 	fmt.Println("In  path:", inpath)
 	fmt.Println("Out path:", outpath)
