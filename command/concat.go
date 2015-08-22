@@ -4,7 +4,6 @@ import ( // {{{
 	"bufio"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -51,7 +50,6 @@ func getImportLine(fname string, importList *[]string) ([]string, error) { // {{
 				continue
 			} else {
 				*importList = append(*importList, fpath)
-				log.Printf("importList: %v\n", importList)
 				lines, err := getImportLine(fpath, importList)
 				if err != nil {
 					fmt.Errorf("%s", err)
