@@ -1,9 +1,10 @@
 package command
 
-import (
+import ( // {{{
 	"bufio"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -12,11 +13,20 @@ import (
 	"github.com/codegangsta/cli"
 	"golang.org/x/text/encoding/japanese"
 	"golang.org/x/text/transform"
-)
+) // }}}
 
-func getImportLine(fname string) ([]string, error) {
+func isExistList(importList []string, target string) bool {
+	for _, imp := range importList {
+		if imp == target {
+			return true
+		}
+	}
+	return false
+}
+
+func getImportLine(fname string, importList *[]string) ([]string, error) { // {{{
 	var err error
-	importLines := make([]string, 0)
+	var importLines []string
 
 	f, err := os.Open(fname)
 	if err != nil {
@@ -37,13 +47,18 @@ func getImportLine(fname string) ([]string, error) {
 			if filepath.Ext(fpath) == "" {
 				fpath = fpath + ".js"
 			}
-			lines, err := getImportLine(fpath)
-			if err != nil {
-				fmt.Errorf("%s", err)
-			}
-
-			for _, line := range lines {
-				importLines = append(importLines, line)
+			if isExistList(*importList, fpath) {
+				continue
+			} else {
+				*importList = append(*importList, fpath)
+				log.Printf("importList: %v\n", importList)
+				lines, err := getImportLine(fpath, importList)
+				if err != nil {
+					fmt.Errorf("%s", err)
+				}
+				for _, line := range lines {
+					importLines = append(importLines, line)
+				}
 			}
 		} else {
 			importLines = append(importLines, line)
@@ -53,19 +68,20 @@ func getImportLine(fname string) ([]string, error) {
 		fmt.Fprintf(os.Stderr, "File %s scan error: %v\n", fname, err)
 	}
 	return importLines, err
-}
+} // }}}
 
-func outputConcat(inpath string, outpath string, header string) error {
+func outputConcat(inpath string, outpath string, header string) error { // {{{
 	var err error
 	var lines []string
-	lines, err = getImportLine(inpath)
+	var importList []string
+	lines, err = getImportLine(inpath, &importList)
 	if err != nil {
 		fmt.Errorf("%s", err)
 	}
 
 	fw, err := os.Create(outpath)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Create out.js Error: %s", err)
+		fmt.Fprintf(os.Stderr, "Mkdir %s Error: %s", outpath, err)
 	}
 	defer fw.Close()
 	fw.WriteString(header)
@@ -80,9 +96,9 @@ func outputConcat(inpath string, outpath string, header string) error {
 	}
 
 	return err
-}
+} // }}}
 
-func getOutName(fname string) string {
+func getOutName(fname string) string { // {{{
 	parent, child := filepath.Split(fname)
 	ext := filepath.Ext(child)
 	base := strings.TrimSuffix(child, ext)
@@ -94,9 +110,9 @@ func getOutName(fname string) string {
 	}
 
 	return filepath.Join(outDir, base+".cmd")
-}
+} // }}}
 
-func utf8Toshiftjis(utf8 string) (string, error) {
+func utf8Toshiftjis(utf8 string) (string, error) { // {{{
 	var err error
 	r := strings.NewReader(utf8)
 	t := transform.NewReader(r, japanese.ShiftJIS.NewEncoder())
@@ -106,9 +122,9 @@ func utf8Toshiftjis(utf8 string) (string, error) {
 		return "", err
 	}
 	return string(ret), err
-}
+} // }}}
 
-func commandExecute(c *cli.Context, header string) error {
+func commandExecute(c *cli.Context, header string) error { // {{{
 	var err error
 
 	if len(c.Args()) != 1 {
@@ -131,4 +147,4 @@ func commandExecute(c *cli.Context, header string) error {
 		fmt.Errorf("%s\n", err)
 	}
 	return err
-}
+} // }}}
