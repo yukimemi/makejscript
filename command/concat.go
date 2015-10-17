@@ -143,8 +143,8 @@ func commandExecute(c *cli.Context, header string) error { // {{{
 	}
 
 	if c.String("output") != "" {
-		base := filepath.Base(inpath)
-		outpath = getOutName(filepath.Join(c.String("output"), base), "")
+		pwd, _ := os.Getwd()
+		outpath = getOutName(filepath.Join(pwd, c.String("output")), "")
 	} else {
 		outpath = getOutName(inpath, "cmd")
 	}
