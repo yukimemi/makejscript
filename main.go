@@ -4,7 +4,6 @@ import (
 	"os"
 
 	"github.com/codegangsta/cli"
-	"github.com/yukimemi/makejscript/command"
 )
 
 func main() {
@@ -20,7 +19,7 @@ func main() {
 	app.Commands = Commands
 	app.CommandNotFound = CommandNotFound
 
-	app.Action = command.CmdRelease
+	// app.Action = command.CmdRelease
 
 	app.Run(os.Args)
 }
